@@ -38,7 +38,8 @@ def get_DHT11_data():
     # guarantee the timing of calls to read the sensor).
     # If this happens try again!
 
-    for i in range(1, 3):
+    tries = 2
+    for i in range(1, tries + 1):
         print('started')
         try:
             humidity, temperatureDHT = Adafruit_DHT.read(
@@ -46,16 +47,13 @@ def get_DHT11_data():
             if humidity is not None and temperatureDHT is not None:
                 return humidity, temperatureDHT
             sleep(2)
-            print('{}. DHT Measurement failed. Starting next try'.format(i))
+            print('{}. DHT Measurement failed.{}'.format(i, ' Starting next try'
+                                                            if i != tries else ''))
         except ValueError:
             print('Sensor not found')
+            break
 
     return "nan", "nan"
-
-    # Note that sometimes you won't get a reading and
-    # the results will be null (because Linux can't
-    # guarantee the timing of calls to read the sensor).
-    # If this happens try again!
 
 
 # ---------------------------------------------------------------------#
@@ -137,16 +135,16 @@ def logging():
     print(folderName)
     try:
         os.makedirs(folderName, mode=0o777)
+        print('Folder created')
     except OSError, e:
-	if e.errno != 17:
-        	print('Error creating folder: ' + str(e) ) # errno 17= File existed 
-	else: 
-		pass 
-    print('Folder created')
+        if e.errno != 17:
+            print('Error creating folder: ' + str(e) ) # errno 17= File existed
+        else:
+            pass
     # Form String out of measurement
     #tempString = str(ceil(datetime.datetime.timestamp(actualDateTime)))
     tempString = str(time.mktime(actualDateTime.timetuple()))
-    
+
     tempString += ', ' + ', '.join("{}".
                                    format(val) for val in ds1820Temps.values())
     tempString += ', ' + ', '.join("{}".
@@ -157,11 +155,10 @@ def logging():
     fileTimeStamp = actualDateTime.strftime('%Y%m%d_%H00')
     fileName = fileTimeStamp + '_ds1820_dht11'
     print(fileName)
-    if not os.path.isfile(folderName + '/' + fileName):
-        loggFIle = open(folderName + '/' + fileName,  'a')
+
+    loggFIle = open(folderName + '/' + fileName, 'a')
+    if loggFile.tell() == 0:
         loggFIle.write(writeFileHeader(ds1820Temps))
-    else:
-        loggFIle = open(folderName + '/' + fileName,  'a')
     loggFIle.write(tempString + '\n')
     loggFIle.close()
 
